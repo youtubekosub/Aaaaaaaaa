@@ -1,0 +1,93 @@
+:root {
+    --bg: #f8fafc;
+    --card: #ffffff;
+    --primary: #3b82f6;
+    --text: #1e293b;
+    --subtext: #64748b;
+}
+
+body {
+    margin: 0;
+    font-family: 'Inter', sans-serif;
+    background-color: var(--bg);
+    color: var(--text);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+.container {
+    background: var(--card);
+    padding: 3rem;
+    border-radius: 24px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+    text-align: center;
+    width: 100%;
+    max-width: 500px;
+}
+
+h1 {
+    font-size: 3rem;
+    margin: 0;
+    color: var(--primary);
+    letter-spacing: -1px;
+}
+
+p {
+    color: var(--subtext);
+    margin-bottom: 2rem;
+}
+
+#proxy-form {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 1.5rem;
+}
+
+input {
+    flex: 1;
+    padding: 12px 20px;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+input:focus {
+    border-color: var(--primary);
+}
+
+button {
+    padding: 12px 24px;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+button:hover {
+    opacity: 0.9;
+}
+
+.quick-links {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+}
+
+.quick-links button {
+    background: #f1f5f9;
+    color: var(--text);
+    font-size: 0.85rem;
+    padding: 8px 16px;
+}
+
+footer {
+    margin-top: 2rem;
+    font-size: 0.75rem;
+    color: var(--subtext);
+}
