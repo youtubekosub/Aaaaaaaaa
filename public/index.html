@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>sennin Search</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>sennin</h1>
+            <p>シンプルで高速なWebプロキシ</p>
+        </header>
+        
+        <main>
+            <form id="proxy-form">
+                <input type="text" id="url-input" placeholder="URLを入力、または検索..." autocomplete="off">
+                <button type="submit">開始</button>
+            </form>
+            
+            <div class="quick-links">
+                <button onclick="quickGo('https://www.google.com')">Google</button>
+                <button onclick="quickGo('https://www.youtube.com')">YouTube</button>
+                <button onclick="quickGo('https://discord.com')">Discord</button>
+            </div>
+        </main>
+        
+        <footer>
+            <p>&copy; 2024 Nova Proxy Project</p>
+        </footer>
+    </div>
+
+    <script src="uv/uv.bundle.js"></script>
+    <script src="uv/uv.config.js"></script>
+    <script>
+        const form = document.getElementById('proxy-form');
+        const input = document.getElementById('url-input');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            launchProxy(input.value);
+        });
+
+        function quickGo(url) {
+            launchProxy(url);
+        }
+
+        async function launchProxy(query) {
+            // Service Workerの登録
+            window.navigator.serviceWorker.register('./sw.js', {
+                scope: __uv$config.prefix
+            }).then(() => {
+                let url = query.trim();
+                if (!url.includes('.') || url.includes(' ')) {
+                    url = 'https://www.google.com/search?q=' + encodeURIComponent(query);
+                } else if (!/^https?:\/\//i.test(url)) {
+                    url = 'https://' + url;
+                }
+                
+                location.href = __uv$config.prefix + __uv$config.encodeUrl(url);
+            });
+        }
+    </script>
+</body>
+</html>
