@@ -16,8 +16,12 @@ app.get('/', (req, res) => {
     res.sendFile(join(__dirname, 'public/index.html'));
 });
 
-// 404エラーハンドリング
-app.use((req, res) => {
+// 404エラーハンドリングの修正
+// /service/ (プロキシ用パス) へのリクエストをサーバー側で拒否しないようにします
+app.use((req, res, next) => {
+    if (req.path.startsWith('/service/')) {
+        return next();
+    }
     res.status(404).send('Page Not Found');
 });
 
