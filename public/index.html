@@ -3,65 +3,151 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>sennin Search</title>
-    <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <title>Nova Search</title>
+    <style>
+        :root {
+            --bg: #ffffff;
+            --main: #3b82f6;
+            --text: #1f2937;
+            --input-bg: #f3f4f6;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .container {
+            text-align: center;
+            width: 90%;
+            max-width: 600px;
+            transition: opacity 0.5s ease;
+        }
+
+        h1 {
+            font-size: 4rem;
+            margin: 0 0 30px 0;
+            background: linear-gradient(to right, #3b82f6, #60a5fa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 800;
+        }
+
+        input {
+            width: 100%;
+            padding: 18px 25px;
+            font-size: 1.1rem;
+            border: none;
+            border-radius: 50px;
+            background-color: var(--input-bg);
+            box-sizing: border-box;
+            outline: none;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        input:focus {
+            background-color: #fff;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+        }
+
+        .status-msg {
+            margin-top: 20px;
+            font-size: 0.9rem;
+            color: #ef4444; /* エラー時は赤色 */
+            min-height: 1.2em;
+        }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>sennin</h1>
-            <p>シンプルで高速なWebプロキシ</p>
-        </header>
-        
-        <main>
-            <form id="proxy-form">
-                <input type="text" id="url-input" placeholder="URLを入力、または検索..." autocomplete="off">
-                <button type="submit">開始</button>
-            </form>
-            
-            <div class="quick-links">
-                <button onclick="quickGo('https://www.google.com')">Google</button>
-                <button onclick="quickGo('https://www.youtube.com')">YouTube</button>
-                <button onclick="quickGo('https://discord.com')">Discord</button>
-            </div>
-        </main>
-        
-        <footer>
-            <p>&copy; 2024 Nova Proxy Project</p>
-        </footer>
-    </div>
 
-    <script src="uv/uv.bundle.js"></script>
-    <script src="uv/uv.config.js"></script>
-    <script>
-        const form = document.getElementById('proxy-form');
-        const input = document.getElementById('url-input');
+<div class="container" id="main-ui">
+    <h1>Nova</h1>
+    <input type="text" id="search-input" placeholder="検索キーワード、またはURLを入力..." autofocus>
+    <div id="status" class="status-msg"></div>
+</div>
 
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            launchProxy(input.value);
-        });
+<script src="uv/uv.bundle.js"></script>
+<script src="uv/uv.config.js"></script>
 
-        function quickGo(url) {
-            launchProxy(url);
-        }
+<script>
+    const input = document.getElementById('search-input');
+    const status = document.getElementById('status');
+    const SEARCH_ENGINE = 'https://www.google.com/search?q=%s';
 
-        async function launchProxy(query) {
-            // Service Workerの登録
-            window.navigator.serviceWorker.register('./sw.js', {
-                scope: __uv$config.prefix
-            }).then(() => {
-                let url = query.trim();
-                if (!url.includes('.') || url.includes(' ')) {
-                    url = 'https://www.google.com/search?q=' + encodeURIComponent(query);
-                } else if (!/^https?:\/\//i.test(url)) {
+    input.addEventListener('keydown', async (e) => {
+        if (e.key === 'Enter') {
+            const query = input.value.trim();
+            if (!query) return;
+
+            status.textContent = "接続を準備中...";
+
+            try {
+                // 1. Service Worker登録
+                await navigator.serviceWorker.register('./sw.js', { scope: __uv$config.prefix });
+
+                // 2. URL判定
+                let url = query;
+                const isUrl = /^(http|https):\/\//.test(url);
+                const isDomain = /^[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9]\.[a-zA-Z]{2,}$/.test(url);
+
+                if (!isUrl && !isDomain) {
+                    url = SEARCH_ENGINE.replace('%s', encodeURIComponent(query));
+                } else if (!isUrl) {
                     url = 'https://' + url;
                 }
-                
-                location.href = __uv$config.prefix + __uv$config.encodeUrl(url);
-            });
+
+                const proxyUrl = location.origin + __uv$config.prefix + __uv$config.encodeUrl(url);
+
+                // 3. about:blank 展開
+                const win = window.open();
+                if (!win) {
+                    status.textContent = "ポップアップがブロックされました。許可してください。";
+                    return;
+                }
+
+                // about:blank 内にカスタムHTMLを書き込む（エラーハンドリング用）
+                const doc = win.document;
+                doc.title = "Loading...";
+                doc.body.style.margin = "0";
+                doc.body.style.overflow = "hidden";
+                doc.body.style.backgroundColor = "#000";
+
+                // iframeを作成
+                const iframe = doc.createElement('iframe');
+                iframe.style.width = "100vw";
+                iframe.style.height = "100vh";
+                iframe.style.border = "none";
+                iframe.src = proxyUrl;
+
+                // iframeの読み込みエラーを検知
+                iframe.onerror = () => {
+                    doc.body.innerHTML = `
+                        <div style="color:white; font-family:sans-serif; display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; text-align:center;">
+                            <h1>Nova: Access Error</h1>
+                            <p>サイトに接続できませんでした。URLが正しいか、サーバーの状態を確認してください。</p>
+                            <button onclick="location.reload()" style="padding:10px 20px; cursor:pointer;">再試行</button>
+                        </div>
+                    `;
+                };
+
+                doc.body.appendChild(iframe);
+                status.textContent = "";
+                input.value = "";
+
+            } catch (err) {
+                status.textContent = "エラーが発生しました: " + err.message;
+            }
         }
-    </script>
+    });
+</script>
 </body>
 </html>
