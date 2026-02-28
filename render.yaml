@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: nova-proxy-service
+    env: node
+    region: ohio
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_VERSION
+        value: 18.0.0
+      - key: PORT
+        value: 8080
+    autoDeploy: true
+    # ヘルスチェック設定（スリープ解除後の安定性向上）
+    healthCheckPath: /
