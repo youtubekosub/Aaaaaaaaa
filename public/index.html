@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Sennin Proxy</title>
   <style>
-    /* 明るくモダンなUIデザイン */
     :root {
       --primary-color: #007bff;
       --bg-gradient: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
@@ -15,22 +14,15 @@
     }
 
     body {
-      margin: 0;
-      padding: 0;
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      margin: 0; padding: 0;
+      font-family: 'Inter', -apple-system, sans-serif;
       background: var(--bg-gradient);
       height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
+      display: flex; justify-content: center; align-items: center;
       color: var(--text-color);
     }
 
-    .app-root {
-      width: 100%;
-      max-width: 500px;
-      padding: 20px;
-    }
+    .app-root { width: 100%; max-width: 500px; padding: 20px; }
 
     .card {
       background: var(--card-bg);
@@ -41,135 +33,64 @@
       text-align: center;
     }
 
-    .brand {
-      margin-bottom: 35px;
-    }
-
     .brand .text {
-      font-size: 2.8rem;
-      font-weight: 900;
-      letter-spacing: -1.5px;
+      font-size: 2.8rem; font-weight: 900; letter-spacing: -1.5px;
       background: linear-gradient(to right, #007bff, #00d4ff);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
-      display: block;
+      margin-bottom: 35px; display: block;
     }
 
-    /* CSSで作る検索バーと虫眼鏡アイコン */
     .searchbar {
-      display: flex;
-      align-items: center;
-      background: #f1f5f9;
-      padding: 14px 22px;
-      border-radius: 20px;
-      border: 2px solid transparent;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex; align-items: center;
+      background: #f1f5f9; padding: 14px 22px; border-radius: 20px;
+      border: 2px solid transparent; transition: all 0.3s ease;
     }
 
     .searchbar:focus-within {
-      border-color: var(--primary-color);
-      background: #ffffff;
+      border-color: var(--primary-color); background: #ffffff;
       box-shadow: 0 0 0 5px rgba(0, 123, 255, 0.15);
     }
 
     /* CSS虫眼鏡アイコン */
     .search-icon-css {
-      width: 20px;
-      height: 20px;
-      position: relative;
-      display: inline-block;
-      flex-shrink: 0;
+      width: 20px; height: 20px; position: relative; flex-shrink: 0;
     }
-
-    /* 虫眼鏡の円の部分 */
     .search-icon-css::before {
-      content: '';
-      position: absolute;
-      width: 14px;
-      height: 14px;
-      border: 2.5px solid var(--icon-color);
-      border-radius: 50%;
-      top: 0;
-      left: 0;
-      transition: border-color 0.3s;
+      content: ''; position: absolute; width: 14px; height: 14px;
+      border: 2.5px solid var(--icon-color); border-radius: 50%; top: 0; left: 0;
     }
-
-    /* 虫眼鏡の手持ち部分 */
     .search-icon-css::after {
-      content: '';
-      position: absolute;
-      width: 8px;
-      height: 2.5px;
-      background-color: var(--icon-color);
-      bottom: 2px;
-      right: -1px;
-      transform: rotate(45deg);
-      border-radius: 2px;
-      transition: background-color 0.3s;
-    }
-
-    .searchbar:focus-within .search-icon-css::before {
-      border-color: var(--primary-color);
-    }
-    .searchbar:focus-within .search-icon-css::after {
-      background-color: var(--primary-color);
+      content: ''; position: absolute; width: 8px; height: 2.5px;
+      background-color: var(--icon-color); bottom: 2px; right: -1px;
+      transform: rotate(45deg); border-radius: 2px;
     }
 
     .search-input {
-      border: none;
-      background: transparent;
-      width: 100%;
-      margin-left: 15px;
-      font-size: 1.05rem;
-      outline: none;
-      color: var(--text-color);
+      border: none; background: transparent; width: 100%;
+      margin-left: 15px; font-size: 1.05rem; outline: none; color: var(--text-color);
     }
 
-    .search-input::placeholder {
-      color: #94a3b8;
-    }
-
-    /* ローディング画面 */
     #uv-loading {
-      position: fixed;
-      inset: 0;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      background: rgba(255, 255, 255, 0.85);
-      z-index: 99999;
+      position: fixed; inset: 0; display: none;
+      align-items: center; justify-content: center;
+      background: rgba(255, 255, 255, 0.85); z-index: 99999;
       backdrop-filter: blur(6px);
     }
-
-    #uv-loading svg {
-      width: 65px;
-      height: 65px;
-      animation: spin 0.8s linear infinite;
-    }
-
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
+    #uv-loading svg { width: 65px; height: 65px; animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
 
   <div class="app-root">
-    <main class="layout">
-      <section class="center-panel">
-        <div class="card">
-          <header class="card-header">
-            <div class="brand"><span class="text">Sennin Proxy</span></div>
-          </header>
-          <div class="search-area">
-            <form id="uv-form" class="searchbar" autocomplete="off">
-              <div class="search-icon-css"></div>
-              <input id="uv-address" type="search" class="search-input" placeholder="検索またはURLを入力..." />
-            </form>
-          </div>
-        </div>
-      </section>
-    </main>
+    <div class="card">
+      <div class="brand"><span class="text">Sennin Proxy</span></div>
+      <form id="uv-form" class="searchbar" autocomplete="off">
+        <div class="search-icon-css"></div>
+        <input id="uv-address" type="search" class="search-input" placeholder="検索またはURLを入力..." />
+      </form>
+    </div>
   </div>
 
   <div id="uv-loading">
@@ -192,13 +113,25 @@
       loading.style.display = "flex";
 
       try {
-        // Service Workerの登録と準備完了を待機
-        await navigator.serviceWorker.register('/sw.js', { 
+        // 1. Service Workerの登録
+        const registration = await navigator.serviceWorker.register('/sw.js', { 
           scope: __uv$config.prefix 
         });
 
+        // 2. SWが「アクティブ」になるまで強制的に待機 (重要)
+        // 初回起動時にここが抜けると、リクエストがサーバーに直撃して404になります
         await navigator.serviceWorker.ready;
         
+        // アクティブなコントローラーがない場合、少し待機して再試行
+        if (!navigator.serviceWorker.controller) {
+          await new Promise(resolve => {
+            navigator.serviceWorker.addEventListener('controllerchange', resolve, { once: true });
+            // タイムアウト設定
+            setTimeout(resolve, 2000);
+          });
+        }
+
+        // 3. URL判定
         let url = raw;
         if (!/^https?:\/\//.test(url) && !url.includes('.')) {
           url = "https://www.google.com/search?q=" + encodeURIComponent(raw);
@@ -206,11 +139,13 @@
           url = "https://" + url;
         }
 
+        // 4. プロキシURL生成
         const proxyUrl = window.location.origin + __uv$config.prefix + __uv$config.encodeUrl(url);
         
+        // 5. about:blank 展開
         const win = window.open();
         if (!win) {
-          alert("ポップアップがブロックされました。ブラウザの設定で許可してください。");
+          alert("ポップアップを許可してください。");
           loading.style.display = "none";
           return;
         }
@@ -218,6 +153,7 @@
         win.document.body.style.margin = "0";
         win.document.body.style.height = "100vh";
         win.document.body.style.overflow = "hidden";
+        win.document.body.style.backgroundColor = "#000";
 
         const iframe = win.document.createElement("iframe");
         iframe.style.width = "100%"; 
@@ -227,10 +163,15 @@
         
         win.document.body.appendChild(iframe);
 
-        loading.style.display = "none";
-        address.value = "";
+        // 成功したら入力をクリアしてローディングを消す
+        setTimeout(() => {
+          loading.style.display = "none";
+          address.value = "";
+        }, 800);
+
       } catch (err) {
-        alert("エラー: " + err.message);
+        alert("接続に失敗しました。ページをリロードしてください。");
+        console.error(err);
         loading.style.display = "none";
       }
     };
