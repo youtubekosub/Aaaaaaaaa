@@ -48,23 +48,29 @@
     }
 
     .searchbar:focus-within {
-      border-color: var(--primary-color); background: #ffffff;
+      border-color: var(--primary-color);
+      background: #ffffff;
       box-shadow: 0 0 0 5px rgba(0, 123, 255, 0.15);
     }
 
-    /* CSS虫眼鏡アイコン */
+    /* CSSのみで描画する検索アイコン */
     .search-icon-css {
       width: 20px; height: 20px; position: relative; flex-shrink: 0;
     }
     .search-icon-css::before {
       content: ''; position: absolute; width: 14px; height: 14px;
-      border: 2.5px solid var(--icon-color); border-radius: 50%; top: 0; left: 0;
+      border: 2.5px solid var(--icon-color); border-radius: 50%;
+      top: 0; left: 0; transition: border-color 0.3s;
     }
     .search-icon-css::after {
       content: ''; position: absolute; width: 8px; height: 2.5px;
-      background-color: var(--icon-color); bottom: 2px; right: -1px;
-      transform: rotate(45deg); border-radius: 2px;
+      background-color: var(--icon-color);
+      bottom: 2px; right: -1px; transform: rotate(45deg);
+      border-radius: 2px; transition: background-color 0.3s;
     }
+
+    .searchbar:focus-within .search-icon-css::before { border-color: var(--primary-color); }
+    .searchbar:focus-within .search-icon-css::after { background-color: var(--primary-color); }
 
     .search-input {
       border: none; background: transparent; width: 100%;
@@ -114,19 +120,18 @@
 
       try {
         // 1. Service Workerの登録
-        const registration = await navigator.serviceWorker.register('/sw.js', { 
+        await navigator.serviceWorker.register('/sw.js', { 
           scope: __uv$config.prefix 
         });
 
-        // 2. SWが「アクティブ」になるまで強制的に待機 (重要)
-        // 初回起動時にここが抜けると、リクエストがサーバーに直撃して404になります
+        // 2. SWが「準備完了」かつ「アクティブ」になるのを確実に待機
         await navigator.serviceWorker.ready;
         
-        // アクティブなコントローラーがない場合、少し待機して再試行
+        // コントローラーが割り当てられていない場合は待機
         if (!navigator.serviceWorker.controller) {
-          await new Promise(resolve => {
-            navigator.serviceWorker.addEventListener('controllerchange', resolve, { once: true });
-            // タイムアウト設定
+          await new Promise((resolve) => {
+            navigator.serviceWorker.addEventListener('controllerchange', () => resolve(), { once: true });
+            // 最大2秒でタイムアウトして次へ
             setTimeout(resolve, 2000);
           });
         }
@@ -163,14 +168,14 @@
         
         win.document.body.appendChild(iframe);
 
-        // 成功したら入力をクリアしてローディングを消す
+        // 完了
         setTimeout(() => {
           loading.style.display = "none";
           address.value = "";
-        }, 800);
+        }, 1000);
 
       } catch (err) {
-        alert("接続に失敗しました。ページをリロードしてください。");
+        alert("エラーが発生しました。リロードしてください。");
         console.error(err);
         loading.style.display = "none";
       }
