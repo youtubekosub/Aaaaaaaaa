@@ -1,153 +1,100 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nova Search</title>
-    <style>
-        :root {
-            --bg: #ffffff;
-            --main: #3b82f6;
-            --text: #1f2937;
-            --input-bg: #f3f4f6;
-        }
-
-        body {
-            margin: 0;
-            padding: 0;
-            font-family: 'Helvetica Neue', Arial, sans-serif;
-            background-color: var(--bg);
-            color: var(--text);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            overflow: hidden;
-        }
-
-        .container {
-            text-align: center;
-            width: 90%;
-            max-width: 600px;
-            transition: opacity 0.5s ease;
-        }
-
-        h1 {
-            font-size: 4rem;
-            margin: 0 0 30px 0;
-            background: linear-gradient(to right, #3b82f6, #60a5fa);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            font-weight: 800;
-        }
-
-        input {
-            width: 100%;
-            padding: 18px 25px;
-            font-size: 1.1rem;
-            border: none;
-            border-radius: 50px;
-            background-color: var(--input-bg);
-            box-sizing: border-box;
-            outline: none;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-        }
-
-        input:focus {
-            background-color: #fff;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
-        }
-
-        .status-msg {
-            margin-top: 20px;
-            font-size: 0.9rem;
-            color: #ef4444; /* エラー時は赤色 */
-            min-height: 1.2em;
-        }
-    </style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>proxy</title>
+  <link rel="stylesheet" href="/assets/css/style.css" />
+  <style>
+    #uv-loading {
+      position: fixed; inset: 0; display: none; align-items: center; justify-content: center;
+      background: rgba(255, 255, 255, .8); z-index: 99999;
+    }
+    #uv-loading svg { width: 50px; height: 50px; animation: spin 1s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
 </head>
 <body>
+  <div id="background" aria-hidden="true"></div>
+  <div class="app-root">
+    <main class="layout">
+      <section class="center-panel">
+        <div class="card">
+          <header class="card-header">
+            <div class="brand"><span class="text">proxy</span></div>
+          </header>
+          <div class="search-area">
+            <form id="uv-form" class="searchbar" autocomplete="off">
+              <div class="icon"><img src="/assets/images/search.svg" width="20" height="20" alt="" /></div>
+              <input id="uv-address" type="search" class="search-input" placeholder="Search URL or keyword…" />
+            </form>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
 
-<div class="container" id="main-ui">
-    <h1>Nova</h1>
-    <input type="text" id="search-input" placeholder="検索キーワード、またはURLを入力..." autofocus>
-    <div id="status" class="status-msg"></div>
-</div>
+  <div id="uv-loading">
+    <svg viewBox="0 0 50 50"><circle cx="25" cy="25" r="20" fill="none" stroke="#3b82f6" stroke-width="4" stroke-dasharray="90 30"/></svg>
+  </div>
 
-<script src="uv/uv.bundle.js"></script>
-<script src="uv/uv.config.js"></script>
+  <script src="/uv/uv.bundle.js"></script>
+  <script src="/uv/uv.config.js"></script>
 
-<script>
-    const input = document.getElementById('search-input');
-    const status = document.getElementById('status');
-    const SEARCH_ENGINE = 'https://www.google.com/search?q=%s';
+  <script>
+    const form = document.getElementById("uv-form");
+    const address = document.getElementById("uv-address");
+    const loading = document.getElementById("uv-loading");
 
-    input.addEventListener('keydown', async (e) => {
-        if (e.key === 'Enter') {
-            const query = input.value.trim();
-            if (!query) return;
+    // UVエンコード関数 (XOR)
+    function encodeUV(str) {
+      if (!str) return str;
+      return encodeURIComponent(str.split('').map((c, i) => i % 2 ? String.fromCharCode(c.charCodeAt(0) ^ 2) : c).join(''));
+    }
 
-            status.textContent = "接続を準備中...";
+    form.onsubmit = async (e) => {
+      e.preventDefault();
+      const raw = address.value.trim();
+      if (!raw) return;
 
-            try {
-                // 1. Service Worker登録
-                await navigator.serviceWorker.register('./sw.js', { scope: __uv$config.prefix });
+      loading.style.display = "flex";
 
-                // 2. URL判定
-                let url = query;
-                const isUrl = /^(http|https):\/\//.test(url);
-                const isDomain = /^[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9]\.[a-zA-Z]{2,}$/.test(url);
+      try {
+        // Service Workerの登録
+        await navigator.serviceWorker.register('/sw.js', { scope: __uv$config.prefix });
 
-                if (!isUrl && !isDomain) {
-                    url = SEARCH_ENGINE.replace('%s', encodeURIComponent(query));
-                } else if (!isUrl) {
-                    url = 'https://' + url;
-                }
-
-                const proxyUrl = location.origin + __uv$config.prefix + __uv$config.encodeUrl(url);
-
-                // 3. about:blank 展開
-                const win = window.open();
-                if (!win) {
-                    status.textContent = "ポップアップがブロックされました。許可してください。";
-                    return;
-                }
-
-                // about:blank 内にカスタムHTMLを書き込む（エラーハンドリング用）
-                const doc = win.document;
-                doc.title = "Loading...";
-                doc.body.style.margin = "0";
-                doc.body.style.overflow = "hidden";
-                doc.body.style.backgroundColor = "#000";
-
-                // iframeを作成
-                const iframe = doc.createElement('iframe');
-                iframe.style.width = "100vw";
-                iframe.style.height = "100vh";
-                iframe.style.border = "none";
-                iframe.src = proxyUrl;
-
-                // iframeの読み込みエラーを検知
-                iframe.onerror = () => {
-                    doc.body.innerHTML = `
-                        <div style="color:white; font-family:sans-serif; display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; text-align:center;">
-                            <h1>Nova: Access Error</h1>
-                            <p>サイトに接続できませんでした。URLが正しいか、サーバーの状態を確認してください。</p>
-                            <button onclick="location.reload()" style="padding:10px 20px; cursor:pointer;">再試行</button>
-                        </div>
-                    `;
-                };
-
-                doc.body.appendChild(iframe);
-                status.textContent = "";
-                input.value = "";
-
-            } catch (err) {
-                status.textContent = "エラーが発生しました: " + err.message;
-            }
+        // URL判定
+        let url = raw;
+        if (!/^https?:\/\//.test(url) && !url.includes('.')) {
+          url = "https://www.google.com/search?q=" + encodeURIComponent(raw);
+        } else if (!/^https?:\/\//.test(url)) {
+          url = "https://" + url;
         }
-    });
-</script>
+
+        // about:blank 展開
+        const win = window.open();
+        if (!win) {
+          alert("ポップアップを許可してください");
+          loading.style.display = "none";
+          return;
+        }
+
+        const proxyUrl = window.location.origin + __uv$config.prefix + encodeUV(url);
+        
+        win.document.body.style.margin = "0";
+        win.document.body.style.height = "100vh";
+        const iframe = win.document.createElement("iframe");
+        iframe.style.width = "100%"; iframe.style.height = "100%"; iframe.style.border = "none";
+        iframe.src = proxyUrl;
+        win.document.body.appendChild(iframe);
+
+        loading.style.display = "none";
+        address.value = "";
+      } catch (err) {
+        alert("エラー: " + err.message);
+        loading.style.display = "none";
+      }
+    };
+  </script>
 </body>
 </html>
