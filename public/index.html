@@ -94,7 +94,7 @@
       <div class="brand"><span class="text">Sennin Proxy</span></div>
       <form id="uv-form" class="searchbar" autocomplete="off">
         <div class="search-icon-css"></div>
-        <input id="uv-address" type="search" class="search-input" placeholder="検索またはURLを入力..." />
+        <input id="uv-address" type="search" class="search-input" placeholder="URLを入力、または検索..." />
       </form>
     </div>
   </div>
@@ -119,35 +119,33 @@
       loading.style.display = "flex";
 
       try {
-        // 1. Service Workerの登録
-        await navigator.serviceWorker.register('/sw.js', { 
-          scope: __uv$config.prefix 
-        });
-
-        // 2. SWが「準備完了」かつ「アクティブ」になるのを確実に待機
+        // 1. Service Worker登録の準備
+        await navigator.serviceWorker.register('/sw.js', { scope: __uv$config.prefix });
         await navigator.serviceWorker.ready;
-        
-        // コントローラーが割り当てられていない場合は待機
-        if (!navigator.serviceWorker.controller) {
-          await new Promise((resolve) => {
-            navigator.serviceWorker.addEventListener('controllerchange', () => resolve(), { once: true });
-            // 最大2秒でタイムアウトして次へ
-            setTimeout(resolve, 2000);
-          });
+
+        // 2. 入力内容の判定
+        let targetUrl = "";
+        const isUrl = /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$/.test(raw);
+
+        if (isUrl) {
+          // 直接URLの場合
+          targetUrl = raw.startsWith('http') ? raw : 'https://' + raw;
+        } else {
+          // キーワードの場合、作成したAPI (/api/search) を叩く
+          try {
+            const res = await fetch(`/api/search?q=${encodeURIComponent(raw)}`);
+            const data = await res.json();
+            targetUrl = data.url;
+          } catch (apiErr) {
+            // APIが失敗した時のフォールバック
+            targetUrl = "https://www.google.com/search?q=" + encodeURIComponent(raw);
+          }
         }
 
-        // 3. URL判定
-        let url = raw;
-        if (!/^https?:\/\//.test(url) && !url.includes('.')) {
-          url = "https://www.google.com/search?q=" + encodeURIComponent(raw);
-        } else if (!/^https?:\/\//.test(url)) {
-          url = "https://" + url;
-        }
-
-        // 4. プロキシURL生成
-        const proxyUrl = window.location.origin + __uv$config.prefix + __uv$config.encodeUrl(url);
+        // 3. プロキシURL生成
+        const proxyUrl = window.location.origin + __uv$config.prefix + __uv$config.encodeUrl(targetUrl);
         
-        // 5. about:blank 展開
+        // 4. about:blank 展開
         const win = window.open();
         if (!win) {
           alert("ポップアップを許可してください。");
@@ -168,15 +166,13 @@
         
         win.document.body.appendChild(iframe);
 
-        // 完了
         setTimeout(() => {
           loading.style.display = "none";
           address.value = "";
-        }, 1000);
+        }, 800);
 
       } catch (err) {
-        alert("エラーが発生しました。リロードしてください。");
-        console.error(err);
+        alert("エラーが発生しました。");
         loading.style.display = "none";
       }
     };
